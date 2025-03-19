@@ -50,6 +50,16 @@ int main() {
     sleep_ms(2000);
 
     rtc_init();
+    datetime_t t = {
+        .year  = 2025,
+        .month = 3,
+        .day   = 19,
+        .dotw  = 3,
+        .hour  = 1,
+        .min   = 0,
+        .sec   = 0
+    };
+    rtc_set_datetime(&t);
     
     gpio_init(TRIG_PIN);
     gpio_set_dir(TRIG_PIN, GPIO_OUT);
@@ -63,7 +73,7 @@ int main() {
     bool reading_active = false;
     char command[20];
     int cmd_index = 0;
-    alarm_id_t alarm = 0;
+    alarm_id_t alarm;
     memset(command, 0, sizeof(command));
 
     printf("Digite 'start' para iniciar a leitura e 'stop' para parar:\n");
