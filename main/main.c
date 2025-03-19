@@ -24,7 +24,6 @@ volatile absolute_time_t t_descida;
 volatile absolute_time_t t_subida;
 
 
-
 int64_t alarm_callback(alarm_id_t id, void *user_data) {
     timer_fired = true;
     return 0;
@@ -106,6 +105,7 @@ int main() {
             sleep_us(10);
             gpio_put(TRIG_PIN, 0);
             alarm = add_alarm_in_ms(500, alarm_callback, NULL, false);
+
             absolute_time_t measure_start = get_absolute_time();
             while (!action_completed && !timer_fired) {
                 sleep_ms(1);
