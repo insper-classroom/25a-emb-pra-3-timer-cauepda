@@ -22,6 +22,7 @@ volatile bool timer_fired = false;
 volatile bool action_completed = false;
 
 volatile absolute_time_t t_descida;
+volatile absolute_time_t t_subida;
 
 
 
@@ -35,6 +36,11 @@ void trigger_callback(uint gpio, uint32_t events) {
         flag_f_trigger = 1;
         alarm = add_alarm_in_ms(500, alarm_callback, NULL, false);
     }
+
+    if (gpio == ECHO_PIN && events == 0x8) { // rise edge
+        t_subida = get_absolute_time();
+    }
+
     if (gpio == ECHO_PIN && events == 0x4 && flag_f_trigger) { // fall edge
         t_descida = get_absolute_time();
         flag_f_trigger = 0;
@@ -66,12 +72,11 @@ int main() {
     gpio_set_dir(ECHO_PIN, GPIO_IN);
 
     gpio_set_irq_enabled_with_callback(TRIG_PIN, GPIO_IRQ_EDGE_FALL, true, trigger_callback);
-    gpio_set_irq_enabled(ECHO_PIN, GPIO_IRQ_EDGE_FALL, true);
+    gpio_set_irq_enabled(ECHO_PIN, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true);
 
     bool reading_active = false;
     char command[20];
     int cmd_index = 0;
-    absolute_time_t t_subida;
     memset(command, 0, sizeof(command));
 
     printf("Digite 'start' para iniciar a leitura e 'stop' para parar:\n");
@@ -108,13 +113,11 @@ int main() {
             flag_f_trigger = true;
             timer_fired = false;
             action_completed = false;
-            alarm = add_alarm_in_ms(500, alarm_callback, NULL, false);
             
             gpio_put(TRIG_PIN, 1);
             sleep_us(10);
             gpio_put(TRIG_PIN, 0);
-            
-            t_subida = get_absolute_time();
+            alarm = add_alarm_in_ms(500, alarm_callback, NULL, false);
             
             absolute_time_t measure_start = get_absolute_time();
             while (!action_completed && !timer_fired) {
