@@ -21,7 +21,7 @@ volatile int flag_f_trigger = 0;
 volatile bool timer_fired = false;
 volatile bool action_completed = false;
 
-absolute_time_t t_subida, t_descida;
+volatile absolute_time_t t_subida, t_descida;
 
 
 
