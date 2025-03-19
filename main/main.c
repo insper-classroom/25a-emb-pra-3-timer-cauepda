@@ -21,7 +21,7 @@ volatile int flag_f_trigger = 0;
 volatile bool timer_fired = false;
 volatile bool action_completed = false;
 
-volatile absolute_time_t t_subida, t_descida;
+volatile absolute_time_t t_descida;
 
 
 
@@ -71,6 +71,7 @@ int main() {
     bool reading_active = false;
     char command[20];
     int cmd_index = 0;
+    absolute_time_t t_subida;
     memset(command, 0, sizeof(command));
 
     printf("Digite 'start' para iniciar a leitura e 'stop' para parar:\n");
