@@ -16,7 +16,6 @@
 #define ECHO_PIN 14
 
 volatile alarm_id_t alarm = 0;
-volatile int flag_f_trigger = 0;
 
 volatile bool timer_fired = false;
 volatile bool action_completed = false;
@@ -31,19 +30,13 @@ int64_t alarm_callback(alarm_id_t id, void *user_data) {
     return 0;
 }
 
-void trigger_callback(uint gpio, uint32_t events) {
-    if (gpio == TRIG_PIN && events == 0x4) { // fall edge
-        flag_f_trigger = 1;
-        alarm = add_alarm_in_ms(500, alarm_callback, NULL, false);
-    }
-
+void echo_callback(uint gpio, uint32_t events) {
     if (gpio == ECHO_PIN && events == 0x8) { // rise edge
         t_subida = get_absolute_time();
     }
 
-    if (gpio == ECHO_PIN && events == 0x4 && flag_f_trigger) { // fall edge
+    if (gpio == ECHO_PIN && events == 0x4) { // fall edge
         t_descida = get_absolute_time();
-        flag_f_trigger = 0;
         if (!timer_fired && alarm) {
             cancel_alarm(alarm);
         }
@@ -71,8 +64,7 @@ int main() {
     gpio_init(ECHO_PIN);
     gpio_set_dir(ECHO_PIN, GPIO_IN);
 
-    gpio_set_irq_enabled_with_callback(TRIG_PIN, GPIO_IRQ_EDGE_FALL, true, trigger_callback);
-    gpio_set_irq_enabled(ECHO_PIN, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true);
+    gpio_set_irq_enabled_with_callback(ECHO_PIN, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, echo_callback);
 
     bool reading_active = false;
     char command[20];
@@ -80,9 +72,6 @@ int main() {
     memset(command, 0, sizeof(command));
 
     printf("Digite 'start' para iniciar a leitura e 'stop' para parar:\n");
-
-    const uint32_t measurement_interval_ms = 1000;
-    absolute_time_t last_measurement = get_absolute_time();
 
     while (true) {
         int ch = getchar_timeout_us(0);
@@ -109,20 +98,19 @@ int main() {
             }
         }
         
-        if (reading_active && absolute_time_diff_us(last_measurement, get_absolute_time()) >= measurement_interval_ms * 1000) {
-            flag_f_trigger = true;
-            timer_fired = false;
+        if (reading_active) {
             action_completed = false;
-            
+            timer_fired = false;
+
             gpio_put(TRIG_PIN, 1);
             sleep_us(10);
             gpio_put(TRIG_PIN, 0);
             alarm = add_alarm_in_ms(500, alarm_callback, NULL, false);
-            
             absolute_time_t measure_start = get_absolute_time();
             while (!action_completed && !timer_fired) {
                 sleep_ms(1);
-                if (absolute_time_diff_us(measure_start, get_absolute_time()) > 1000000) break;
+                if (absolute_time_diff_us(measure_start, get_absolute_time()) > 1000000)
+                    break;
             }
             cancel_alarm(alarm);
             
@@ -136,10 +124,10 @@ int main() {
             } else {
                 printf("Leitura não concluída\n");
             }
-            last_measurement = get_absolute_time();
+            sleep_ms(1000);
         }
-        
-        sleep_ms(10);
+    
+    sleep_ms(10);
     }
     
     return 0;
