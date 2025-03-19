@@ -15,8 +15,6 @@
 #define TRIG_PIN 15
 #define ECHO_PIN 14
 
-volatile alarm_id_t alarm = 0;
-
 volatile bool timer_fired = false;
 volatile bool action_completed = false;
 
@@ -36,9 +34,6 @@ void echo_callback(uint gpio, uint32_t events) {
 
     if (gpio == ECHO_PIN && events == 0x4) { // fall edge
         t_descida = get_absolute_time();
-        if (!timer_fired && alarm) {
-            cancel_alarm(alarm);
-        }
         timer_fired = false;
         action_completed = true;
     }
@@ -68,6 +63,7 @@ int main() {
     bool reading_active = false;
     char command[20];
     int cmd_index = 0;
+    alarm_id_t alarm = 0;
     memset(command, 0, sizeof(command));
 
     printf("Digite 'start' para iniciar a leitura e 'stop' para parar:\n");
@@ -116,6 +112,7 @@ int main() {
             
             print_datetime();
             if (action_completed) {
+                
                 int64_t pulse_duration = absolute_time_diff_us(t_subida, t_descida);
                 float distance = (pulse_duration * 0.0343f) / 2.0f;
                 printf("%.2f cm\n", distance);
